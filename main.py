@@ -236,7 +236,7 @@ async def main() -> None:
     # print(projects)
 
     # Define projects not run retention policy
-    remove_projects_name = {'base','catalog-mirror','images-mirror','dgx','helm-chart','ht-devops','ht-platforms','team-os','component-ocp','anht','aqua-security','attt-efin','externals','library','glamor-bidv','netops','quanglv2','sre','tools','vhgsdv','vhud','bidv-omni','ansp','bidv-uat','aiomni','project-dung-test','cndl-prod','cndl','devops','drop'}
+    remove_projects_name = {'base','catalog-mirror','images-mirror'}
 
     # Projects run retention policy
     print("🔍 filtering project...")
