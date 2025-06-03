@@ -1,0 +1,93 @@
+expose:
+  ingress:
+    hosts:
+      core: harbor-k8s.mydomain.local
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+
+externalURL: https://harbor-k8s.mydomain.local
+
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      storageClass: "storageclassname"
+      size: 15Gi
+      accessMode: ReadWriteMany
+    jobservice:
+      jobLog:
+        storageClass: "storageclassname"
+        size: 5Gi
+        accessMode: ReadWriteMany
+    database:
+      storageClass: "storageclassname"
+      size: 10Gi
+    redis:
+      storageClass: "storageclassname"
+      size: 5Gi
+    trivy:
+      storageClass: "storageclassname"
+      size: 50Gi
+  imageChartStorage:
+    disableredirect: true
+    type: s3
+    s3:
+      existingSecret: "harbor-s3-secret"
+      bucket: harbor
+      regionendpoint: http://myminio.local
+      secure: false
+      skipverify: true
+
+logLevel: info
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+cache:
+  enabled: true
+
+portal:
+  replicas: 2
+
+core:
+  replicas: 2
+
+jobservice:
+  replicas: 2
+  jobLoggers:
+    - database
+
+registry:
+  replicas: 2
+
+trivy:
+  enabled: true
+  replicas: 1
+  initContainers:
+  - name: download-trivy-db
+    image: trivy-db:latest
+    imagePullPolicy: Always
+    command: 
+      - sh
+      - -c
+      - |
+        TRIVY_TEMP_DIR=$(mktemp -d)
+        mkdir -p /tmp/trivy
+
+        # trivy.db
+        trivy --cache-dir $TRIVY_TEMP_DIR image --download-db-only --db-repository artifact.mydomain.local/aquasecurity/trivy-db:2
+        mv $TRIVY_TEMP_DIR/db /tmp/trivy
+
+        # trivy-java.db
+        trivy --cache-dir $TRIVY_TEMP_DIR image --download-java-db-only --java-db-repository artifact.mydomain.local/aquasecurity/trivy-java-db:1
+        mv $TRIVY_TEMP_DIR/java-db /tmp/trivy
+    volumeMounts:
+      - name: data
+        mountPath: /tmp
+        readOnly: false
+  skipUpdate: true
+  skipJavaDBUpdate: true
+  offlineScan: true
